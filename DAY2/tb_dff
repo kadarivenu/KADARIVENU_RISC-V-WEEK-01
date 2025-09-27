@@ -1,0 +1,85 @@
+```verilog
+`timescale 1ns/1ps
+
+module dff_tb;
+
+  // Clock and input signals
+  reg clk;
+  reg async_reset;
+  reg async_set;
+  reg sync_reset;
+  reg d;
+
+  // Outputs
+  wire q_asyncres;
+  wire q_asyncset;
+  wire q_syncres;
+
+  // Instantiate DUTs
+  dff_asyncres u1 (
+    .clk(clk),
+    .async_reset(async_reset),
+    .d(d),
+    .q(q_asyncres)
+  );
+
+  dff_async_set u2 (
+    .clk(clk),
+    .async_set(async_set),
+    .d(d),
+    .q(q_asyncset)
+  );
+
+  dff_syncres u3 (
+    .clk(clk),
+    .async_reset(async_reset), // unused here, but kept for completeness
+    .sync_reset(sync_reset),
+    .d(d),
+    .q(q_syncres)
+  );
+
+  // Clock generation: 10ns period
+  initial clk = 0;
+  always #5 clk = ~clk;
+
+  // Stimulus
+  initial begin
+    // Initialize signals
+    async_reset = 0;
+    async_set   = 0;
+    sync_reset  = 0;
+    d = 0;
+
+    // Apply async reset
+    #3 async_reset = 1;
+    #7 async_reset = 0;
+
+    // Drive data through flops
+    #10 d = 1;
+    #10 d = 0;
+    #10 d = 1;
+
+    // Apply async set
+    #7 async_set = 1;
+    #10 async_set = 0;
+
+    // Apply sync reset (asserted on next rising edge)
+    #13 sync_reset = 1;
+    #10 sync_reset = 0;
+
+    // More data activity
+    #20 d = 0;
+    #20 d = 1;
+
+    // Finish
+    #50 $finish;
+  end
+
+  // Monitor outputs
+  initial begin
+    $monitor("Time=%0t | D=%b | AR=%b | AS=%b | SR=%b | Q_asyncres=%b | Q_asyncset=%b | Q_syncres=%b",
+              $time, d, async_reset, async_set, sync_reset, q_asyncres, q_asyncset, q_syncres);
+  end
+
+endmodule
+```
